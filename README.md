@@ -4,4 +4,5 @@
 项目用eclipse CDT编写，可以直接用eclipse打开。当然也可以直接手动编译SDL2.cpp文件:
 
 gcc -o SDL2 SDL2.cpp -lSDL2 -std=c++11
-并将resources放在二进制文件同目录下即可运行
+
+并将resources文件夹放在二进制文件同目录下即可运行。
