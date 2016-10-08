@@ -16,6 +16,79 @@ bool isButton(int x, int y) {
 	}
 	return false;
 }
+
+SDL_Cursor *getCursor() {
+	const char *image[] = {
+		/* width height num_colors chars_per_pixel */
+		"    32    32        3            1",
+		/* colors */
+		"X c #000000", ". c #ffffff", "  c None",
+		/* pixels */
+		"                                ",
+		"                                ",
+		"           XX                   ",
+		"          XXXX                  ",
+		"         XX..XX                 ",
+		"         XX..XX                 ",
+		"         XX..XX                 ",
+		"         XX..XX                 ",
+		"         XX..XXXX               ",
+		"         XX..XXXXX  X           ",
+		"         XX..XX..XXXXX          ",
+		"         XX..XX..XX..XXX        ",
+		"         XX..XX..XX..XX.XX      ",
+		"    XXXX XX..XX..XX..XX..XX     ",
+		"    XXXXXXX..XX..XX..XX..XX     ",
+		"    XX..XXX..........XX..XX     ",
+		"    XX..XX...............XX     ",
+		"     XX..XX..............XX     ",
+		"      XX.XX..............XX     ",
+		"       X..X..............XX     ",
+		"       X.................XX     ",
+		"        XX...............XX     ",
+		"        XX..............XX      ",
+		"         XX.............XX      ",
+		"         XX.............XX      ",
+		"         XX.............X       ",
+		"           X...........X        ",
+		"          XX...........X        ",
+		"           XXXXXXXXXXXXX        ",
+		"           XXXXXXXXXXXXX        ",
+		"                                ",
+		"                                ",
+				"12,2" };
+	int i, row, col;
+	unsigned char data[4 * 32];
+	unsigned char mask[4 * 32];
+	int hot_x, hot_y;
+
+	i = -1;
+	for (row = 0; row < 32; ++row) {
+		for (col = 0; col < 32; ++col) {
+			if (col % 8) {
+				data[i] <<= 1;
+				mask[i] <<= 1;
+			} else {
+				++i;
+				data[i] = mask[i] = 0;
+			}
+			switch (image[4 + row][col]) {
+			case 'X':
+				data[i] |= 0x01;
+				mask[i] |= 0x01;
+				break;
+			case '.':
+				mask[i] |= 0x01;
+				break;
+			case ' ':
+				break;
+			}
+		}
+	}
+	sscanf(image[4 + row], "%d,%d", &hot_x, &hot_y);
+	return SDL_CreateCursor(data, mask, 32, 32, hot_x, hot_y);
+}
+
 int main(int argc, char** argv) {
 	SDL_Init(SDL_INIT_EVERYTHING);
 	SDL_Window *window = SDL_CreateWindow("Bulb", SDL_WINDOWPOS_CENTERED,
@@ -50,6 +123,8 @@ int main(int argc, char** argv) {
 	texture = SDL_CreateTextureFromSurface(render, switcher[15]);
 	SDL_RenderCopy(render, texture, NULL, &rectSwitcher);
 	SDL_RenderPresent(render);
+	SDL_Cursor* rawCursor = SDL_GetCursor();
+	SDL_Cursor* newCursor = getCursor();
 	bool quit = false;
 	while (quit == false) {
 		SDL_Event event;
@@ -58,6 +133,19 @@ int main(int argc, char** argv) {
 			case SDL_QUIT:
 				printf("exit\n");
 				quit = true;
+				break;
+			case SDL_MOUSEMOTION:
+				printf("Move on (%d,%d)\n", event.button.x, event.button.y);
+				if (isButton(event.button.x, event.button.y)){
+					if (SDL_GetCursor()==rawCursor){
+						SDL_SetCursor(newCursor);
+					}
+				}else{
+					if(SDL_GetCursor()==newCursor){
+						SDL_SetCursor(rawCursor);
+					}
+				}
+
 				break;
 			case SDL_MOUSEBUTTONDOWN:
 				printf("Click on (%d,%d)\n", event.button.x, event.button.y);
@@ -94,6 +182,7 @@ int main(int argc, char** argv) {
 			}
 		}
 	}
+	SDL_FreeCursor(newCursor);
 	SDL_DestroyTexture(texture);
 	SDL_DestroyRenderer(render);
 	SDL_DestroyWindow(window);
