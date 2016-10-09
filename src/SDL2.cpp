@@ -164,7 +164,7 @@ int main(int argc, char** argv) {
 								switcher[i]);
 						SDL_RenderCopy(render, texture, NULL, &rectSwitcher);
 						SDL_RenderPresent(render);
-						SDL_Delay(10);//图片显示延时
+						SDL_Delay(30);//图片显示延时
 					}
 					printf("Light on\n");
 				} else {
@@ -177,7 +177,7 @@ int main(int argc, char** argv) {
 								switcher[i]);
 						SDL_RenderCopy(render, texture, NULL, &rectSwitcher);
 						SDL_RenderPresent(render);
-						SDL_Delay(10);
+						SDL_Delay(30);
 					}
 					printf("Light off\n");
 				}
