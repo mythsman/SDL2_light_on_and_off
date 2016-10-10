@@ -5,7 +5,7 @@ const int windowWidth = 400;
 const int windowHeight = 640;
 const SDL_Rect rectBulb = { 0, 0, 400, 400 };
 const SDL_Rect rectSwitcher = { 0, 340, 400, 300 };
-bool isButton(int x, int y) {//判断鼠标与按钮的位置关系
+bool isButton(int x, int y) { //判断鼠标与按钮的位置关系
 	if (x >= 90 && x <= 310 && y >= 445 && y <= 538) {
 		if (x < 134) {
 			return (134 - x) * (134 - x) + (491 - y) * (491 - y) <= 42 * 42;
@@ -16,8 +16,14 @@ bool isButton(int x, int y) {//判断鼠标与按钮的位置关系
 	}
 	return false;
 }
+SDL_Texture* SDL_LoadTexture(SDL_Renderer *render, char *file) {
+	SDL_Surface *bmp = SDL_LoadBMP(file);
+	SDL_Texture *tex = SDL_CreateTextureFromSurface(render, bmp);
+	SDL_FreeSurface(bmp);
+	return tex;
+}
 
-SDL_Cursor *getCursor() {//绘制鼠标指针
+SDL_Cursor *getCursor() { //绘制鼠标指针
 	const char *image[] = {
 	/* width height num_colors chars_per_pixel */
 	"    32    32        3            1",
@@ -56,7 +62,7 @@ SDL_Cursor *getCursor() {//绘制鼠标指针
 			"                                ",
 			"                                ", "12,2" };
 	int i, row, col;
-	unsigned char data[4 * 32];//根据样式构造数据参数
+	unsigned char data[4 * 32]; //根据样式构造数据参数
 	unsigned char mask[4 * 32];
 	int hot_x, hot_y;
 	i = -1;
@@ -87,60 +93,48 @@ SDL_Cursor *getCursor() {//绘制鼠标指针
 }
 
 int main(int argc, char** argv) {
-	SDL_Init(SDL_INIT_EVERYTHING);
 	SDL_Window *window = SDL_CreateWindow("Bulb", SDL_WINDOWPOS_CENTERED,
 	SDL_WINDOWPOS_CENTERED, windowWidth, windowHeight, SDL_WINDOW_SHOWN);
 	SDL_Renderer *render = SDL_CreateRenderer(window, -1,
-			SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);//默认使用硬件加速
-	if (render == nullptr) {
-		render = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);//如果硬件加速不支持就用软件加速
-	}
+			SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC); //默认使用硬件加速
 	if (render == nullptr) {
 		puts((char *) SDL_GetError());
-		return 1;
+		render = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE); //如果硬件加速不支持就用软件加速
 	}
-	SDL_Surface *blackBmpSurface = SDL_LoadBMP("resources/black.bmp");
-	SDL_Surface *whiteBmpSurface = SDL_LoadBMP("resources/white.bmp");
-	if (blackBmpSurface == nullptr) {
+	if (render == nullptr) {
 		puts((char *) SDL_GetError());
 		return 1;
 	}
-	if (whiteBmpSurface == nullptr) {
-		puts((char *) SDL_GetError());
-		return 1;
-	}
-	SDL_Surface *surface = blackBmpSurface;
-	SDL_Texture *texture = SDL_CreateTextureFromSurface(render, surface);
-	SDL_RenderClear(render);
-	SDL_RenderCopy(render, texture, NULL, &rectBulb);
+	SDL_Texture *blackBmpTexture = SDL_LoadTexture(render,
+			(char*) "resources/black.bmp");
+	SDL_Texture *whiteBmpTexture = SDL_LoadTexture(render,
+			(char*) "resources/white.bmp");
+	SDL_RenderCopy(render, blackBmpTexture, NULL, &rectBulb);
 	SDL_RenderPresent(render);
-	SDL_Surface *switcher[30];
-	for (int i = 0; i < 30; i++) {//预加载图片帧
+	SDL_Texture *switcher[30];
+	for (int i = 0; i < 30; i++) { //预加载图片帧
 		char src[50] = { 0 };
 		sprintf(src, "resources/switcher/%d.bmp", i);
-		switcher[i] = SDL_LoadBMP(src);
+		switcher[i] = SDL_LoadTexture(render, src);
 	}
-	if (switcher == nullptr) {
-		puts((char *) SDL_GetError());
-		return 1;
-	}
-	texture = SDL_CreateTextureFromSurface(render, switcher[15]);
-	SDL_RenderCopy(render, texture, NULL, &rectSwitcher);
+
+	SDL_RenderCopy(render, switcher[0], NULL, &rectSwitcher);
 	SDL_RenderPresent(render);
 	SDL_Cursor* rawCursor = SDL_GetCursor();
 	SDL_Cursor* newCursor = getCursor();
 	bool quit = false;
+	bool lightOn = false;
 	while (quit == false) {
 		SDL_Event event;
 		while (SDL_PollEvent(&event)) {
 			switch (event.type) {
-			case SDL_QUIT://帧听退出
+			case SDL_QUIT: //帧听退出
 				printf("exit\n");
 				quit = true;
 				break;
-			case SDL_MOUSEMOTION://帧听指针位置
+			case SDL_MOUSEMOTION: //帧听指针位置
 				printf("Move on (%d,%d)\n", event.button.x, event.button.y);
-				if (isButton(event.button.x, event.button.y)) {//更换指针样式
+				if (isButton(event.button.x, event.button.y)) { //更换指针样式
 					if (SDL_GetCursor() == rawCursor) {
 						SDL_SetCursor(newCursor);
 					}
@@ -150,35 +144,32 @@ int main(int argc, char** argv) {
 					}
 				}
 				break;
-			case SDL_MOUSEBUTTONDOWN://帧听点击事件
+			case SDL_MOUSEBUTTONDOWN: //帧听点击事件
 				printf("Click on (%d,%d)\n", event.button.x, event.button.y);
 				if (!isButton(event.button.x, event.button.y))
 					break;
-				if (surface == blackBmpSurface) {
-					surface = whiteBmpSurface;
-					texture = SDL_CreateTextureFromSurface(render, surface);
-					SDL_RenderCopy(render, texture, NULL, &rectBulb);
+				if (lightOn == false) {
+					SDL_RenderCopy(render, whiteBmpTexture, NULL, &rectBulb);
 					SDL_RenderPresent(render);
 					for (int i = 15; i < 30; i++) {
-						texture = SDL_CreateTextureFromSurface(render,
-								switcher[i]);
-						SDL_RenderCopy(render, texture, NULL, &rectSwitcher);
+						SDL_RenderCopy(render, switcher[i], NULL,
+								&rectSwitcher);
 						SDL_RenderPresent(render);
-						SDL_Delay(30);//图片显示延时
+						//SDL_Delay(30); //图片显示延时
 					}
+					lightOn = true;
 					printf("Light on\n");
 				} else {
-					surface = blackBmpSurface;
-					texture = SDL_CreateTextureFromSurface(render, surface);
-					SDL_RenderCopy(render, texture, NULL, &rectBulb);
+
+					SDL_RenderCopy(render, blackBmpTexture, NULL, &rectBulb);
 					SDL_RenderPresent(render);
 					for (int i = 0; i < 15; i++) {
-						texture = SDL_CreateTextureFromSurface(render,
-								switcher[i]);
-						SDL_RenderCopy(render, texture, NULL, &rectSwitcher);
+						SDL_RenderCopy(render, switcher[i], NULL,
+								&rectSwitcher);
 						SDL_RenderPresent(render);
-						SDL_Delay(30);
+						//SDL_Delay(30);
 					}
+					lightOn = false;
 					printf("Light off\n");
 				}
 				break;
@@ -187,8 +178,13 @@ int main(int argc, char** argv) {
 			}
 		}
 	}
+
+	for (int i = 0; i < 15; i++) {
+		SDL_DestroyTexture(switcher[i]);
+	}
 	SDL_FreeCursor(newCursor);
-	SDL_DestroyTexture(texture);
+	SDL_DestroyTexture(blackBmpTexture);
+	SDL_DestroyTexture(whiteBmpTexture);
 	SDL_DestroyRenderer(render);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
