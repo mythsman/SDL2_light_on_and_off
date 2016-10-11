@@ -25,7 +25,8 @@ SDL_Cursor *getCursor() { //绘制鼠标指针
 	/* colors */
 	"X c #000000", ". c #ffffff", "  c None",
 	/* pixels */
-	"                                ", "                                ",
+			"                                ",
+			"                                ",
 			"           XX                   ",
 			"          XXXX                  ",
 			"         XX..XX                 ",
@@ -132,7 +133,7 @@ int main(int argc, char** argv) {
 				quit = true;
 				break;
 			case SDL_MOUSEMOTION: //帧听指针位置
-				printf("Move on (%d,%d)\n", event.button.x, event.button.y);
+				//printf("Move on (%d,%d)\n", event.button.x, event.button.y);
 				if (isButton(event.button.x, event.button.y)) { //更换指针样式
 					if (SDL_GetCursor() == rawCursor) {
 						SDL_SetCursor(newCursor);
@@ -159,7 +160,6 @@ int main(int argc, char** argv) {
 					lightOn = true;
 					printf("Light on\n");
 				} else {
-
 					SDL_RenderCopy(render, blackTexture, NULL, &rectBulb);
 					SDL_RenderPresent(render);
 					for (int i = 0; i < 15; i++) {
